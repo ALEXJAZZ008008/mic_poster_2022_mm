@@ -1,0 +1,196 @@
+\documentclass[portrait, color=UCLburgundy, margin=1cm]{uclposter}
+
+\input{commands.tex}
+
+\usepackage{bm}
+\usepackage{algorithm}
+\usepackage{algorithmic}
+\usepackage{caption}
+\usepackage{blindtext}
+\usepackage{siunitx}
+
+\input{glossary}
+
+\usepackage[style=ieee, maxbibnames=1, minbibnames=1, maxcitenames=1, mincitenames=1, backend=biber, defernumbers=false]{biblatex}
+\addbibresource{./Biblio.bib}
+
+\AtEveryBibitem{\clearfield{month}}
+\AtEveryBibitem{\clearfield{day}}
+\AtEveryBibitem{\clearfield{volume}}
+\AtEveryBibitem{\clearfield{issue}}
+\AtEveryBibitem{\clearfield{pages}}
+\AtEveryBibitem{\clearfield{number}}
+\AtEveryBibitem{\clearfield{title}}
+\AtEveryBibitem{\clearfield{isbn}}
+\AtEveryBibitem{\clearfield{keywords}}
+\AtEveryBibitem{\clearfield{issn}}
+\AtEveryBibitem{\clearfield{journal}}
+
+\usepackage{fontspec}
+\setmainfont[Ligatures=TeX]{LexendDeca-Regular.ttf}
+
+\begin{document}
+    \title{PET/CT Motion Correction Exploiting Motion Models Fit \newline~on Coarsely Gated Data Applied to Finely Gated Data}
+    
+    \author[12*]{Alexander~C.~Whitehead}
+    \author[3]{Kuan-Hao~Su}
+    \author[3]{Scott~D.~Wollenweber}
+    \author[2]{\newline~Jamie~R.~McClelland}
+    \author[12]{Kris~Thielemans}
+    
+    \affil[1]{INM, UCL}
+    \affil[2]{CMIC, UCL}
+    \affil[3]{GE Healthcare}
+    \affil[*]{alexander.whitehead.18@ucl.ac.uk}
+    
+    \maketitle
+
+    \begin{multicols}{3}
+        \section*{Introduction}
+            \begin{highlightbox}[UCLlightgreen]
+                \begin{itemize}
+                    \item \glss{MM} parameterise \glss{DVF} in terms of a \gls{SS}.
+                    \item \glss{MM} impose a degree of temporal or gate-wise regularisation.
+                    \item \glss{MM} can obtain \glss{DVF} for unseen data~\cite{McClelland2013}).
+                    \item Previous work~\cite{Whitehead2021ComparisonMap} indicated that \glss{MM} and \gls{TOF} increase resolution.
+                    \item This work incorporates \acrshort{MLACF}~\cite{Nuyts2012ML-reconstructionFactors}.
+                    \item This work incorporates a diffeomorphic velocity field parameterised registration
+                    \item This work fits the \gls{MM} on coarsely gated data and applies it to finely gated data.
+                    \item This work uses more realistic simulation and count levels.
+                    \item This work differentiates itself by using two \glss{SS}, and group-wise registration.
+                \end{itemize}
+            \end{highlightbox}
+        
+        \section*{Methods}
+            \subsection*{\underline{\textbf{\acrshort{XCAT} Volume Generation}}}
+                \begin{itemize}
+                    \item \acrshort{XCAT} generated 480 volumes using a 240 second respiratory trace.
+                    \item Activity concentrations from a static \gls{18F-FDG} patient scan.
+                    \item \gls{FOV} including the base of the lungs with a 20 millimetre diameter lesion.
+                \end{itemize}
+            
+            \subsection*{\underline{\textbf{\acrshort{PET} Acquisition Simulation}}}
+                \begin{itemize}
+                    \item Simulated using the geometry of a \gls{GE} Discovery 710.
+                    \item Pseudo-randoms and scatter were added.
+                    \item Noise was simulated, such that data matched an acquisition over 240 seconds. The count rate was selected to match that of research scans
+                    \item A respiratory \gls{SS} was generated using \gls{PCA}~\cite{Thielemans2011}.
+                    \item Gated into four respiratory bins using the \gls{SS} and its gradient, each bin was a quadrant centred on the maximum or minimum of the displacement or gradient.
+                    \item \gls{SS} values were determined for the post-gated data by taking an average of the \gls{SS} values in each bin.
+                \end{itemize}
+            
+            \subsection*{\underline{\textbf{\acrshort{MLACF} Image Reconstruction}}}
+                \begin{itemize}
+                    \item Reconstructed using \acrshort{MLACF} with seven full iterations and 24 subsets for the activity update, and 9 iterations for the attenuation update~\cite{Nuyts2012ML-reconstructionFactors}.
+                    \item Initialised using one iteration of \acrshort{MLEM}, with breath hold \acrshort{CT} for \gls{AC}.
+                    \item Normalised between iterations and epsilon added.
+                    \item Quadratic prior included in reconstruction.
+                \end{itemize}
+            
+            \subsection*{\underline{\textbf{Registration}}}
+                \begin{itemize}
+                    \item Pre-processing including; replication of end-slices, smoothing, and standardisation.
+                    \item Group-wise registration with initial pair-wise step.
+                    \item Between each iteration, resampled volume was registered to the \gls{Mu-Map} and \glss{DVF} composed together.
+                    \item Diffeomorphic velocity field b-spline registration using \gls{NMI}.
+                    \item \acrlong{CPG} spacing, \acrlong{BE} weight and number of iterations tuned using a grid search.
+                \end{itemize}
+            
+            \subsection*{\underline{\textbf{\acrlong{MM} Estimation}}}
+                \begin{itemize}
+                    \item \gls{MM} fit as direct \acrlong{RCM} using weighted \gls{LR} between registration \glss{DVF} and two \glss{SS}
+                    \item \gls{LR} weight set from total counts in gate
+                    \item \gls{MM} fit between each iteration.
+                \end{itemize}
+            
+            \subsection*{\underline{\textbf{Image Reconstruction with AC}}}
+                \begin{itemize}
+                    \item Re-gatedinto 30 respiratory bins using displacement gating, \gls{SS} and its gradient (10 amplitude and three gradient bins).
+                    \item \glss{Mu-Map} determined using the inverse of the \glss{DVF} from the \gls{MM}.
+                    \item Re-reconstructed with \gls{AC} using \gls{OSEM} with two full iterations and 24 subsets.
+                    \item Volumes post-filtered with a Gaussian smoothing, (\gls{FWHM} of 6.4 millimetre in transverse plane and a normal Z-filter).
+                \end{itemize}
+            
+            \subsection*{\underline{\textbf{Evaluation}}}
+                \begin{itemize}
+                    \item Data were also \gls{MC} in the same way, but using high noise high temporal/gate resolution, or noiseless data, for the \gls{MM} fitting.
+                    \item Data also reconstructed without \gls{MC}, using either a sum of all \glss{Mu-Map} or the end inhalation \gls{Mu-Map}.
+                    \item Volumes without \gls{MC} registered to the position of the \gls{Mu-Map}.
+                    \item \glss{DVF} generated by each method were also applied to noiseless data for visual analysis.
+                    \item Comparisons used included: A visual analysis, \acrshort{SSIM} to the ground truth~\cite{Wang2009MeanMeasures}, a profile over the lesion, \gls{SUV}\textsubscript{max} and \gls{SUV}\textsubscript{peak}.
+                \end{itemize}
+        
+        \section*{Conclusion}
+            \begin{highlightbox}[UCLlightgreen]
+                \begin{itemize}
+                    \item A low number of gates for \gls{MM} fitting has minimal impact at low noise
+                    \item A low number of gates for \gls{MM} fitting improves \gls{MC} when there is a high level of noise in the gates
+                    \item The execution time using a reduced number of gates is lower.
+                    \item In the future, work will focus on evaluating the method on patient data.
+                \end{itemize}
+            \end{highlightbox}
+        
+        \AtNextBibliography{\tiny}
+        \printbibliography
+    \end{multicols}
+    
+    \begin{multicols}{2}
+        \begin{figure}[H]
+            \centering
+            
+            \includegraphics[width=1.0\linewidth]{profile.png}
+            
+            \begin{highlightbox}[UCLlightblue]
+                \captionsetup{singlelinecheck=false, justification=centering}
+                \caption{Profile across the lesion.}
+            \end{highlightbox}
+            
+            \label{fig:profile}
+        \end{figure}
+        
+        \begin{table}[H]
+            \centering
+            
+            \begin{highlightbox}[UCLlightblue]
+                \captionsetup{singlelinecheck=false, justification=centering}
+                \caption{Comparison of \gls{SUV}\textsubscript{max} and \gls{SUV}\textsubscript{peak}.}
+            \end{highlightbox}
+            
+            \vspace{1.0cm}
+            
+            \resizebox*{1.0\linewidth}{!}
+            {
+                \begin{tabular}{||c|cc||}
+                    \hline
+                    \textbf{\acrshort{SUV}}                 & \textbf{Max}  & \textbf{Peak} \\
+                    \hline
+                    \textbf{Ground Truth}                   & $8.76$        & $7.96$ \\
+                    \hline
+                    \textbf{Four Gate \gls{MM}}             & $8.04$        & $6.18$ \\
+                    \textbf{30 Gate \gls{MM}}               & $1.77$        & $1.32$ \\
+                    \hline
+                    \textbf{Four Gate Noiseless \gls{MM}}   & $8.05$        & $6.24$ \\
+                    \textbf{30 Gate Noiseless \gls{MM}}     & $7.96$        & $5.99$ \\
+                    \hline
+                    \textbf{Ungated, Static \acrshort{CT}}  & $6.61$        & $5.08$ \\
+                    \textbf{Ungated, \gls{AV-CCT}}          & $5.65$        & $4.44$ \\
+                    \hline
+                \end{tabular}
+            }
+            \label{tab:suv}
+        \end{table}
+    \end{multicols}
+    
+    \begin{figure}[H]
+        \centering
+        
+        \includegraphics[width=1.0\linewidth]{visual_analysis.png}
+        
+        \begin{highlightbox}[UCLlightblue]
+            \captionsetup{singlelinecheck=false, justification=centering}
+            \caption{First row \gls{AC} \gls{MC} reconstructions, second row noiseless data. Colour map ranges consistent for all images in each column.}
+        \end{highlightbox}
+        
+        \label{fig:visual_analysis}
+    \end{figure}
+\end{document}
